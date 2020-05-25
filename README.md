@@ -1,5 +1,7 @@
 # Python Chat API
 
+![Build and Test](https://github.com/arseniybanayev/chatapi/workflows/Build%20and%20Test/badge.svg)
+
 If your Python application needs chat functionality, then use Python Chat API to easily add it, along with many other features from WhatsApp or Telegram or your favorite messaging app.
 
 Python Chat API works by creating a rich object model on top of any chat server and presenting intuitive behaviors in a modern async paradigm.
@@ -19,7 +21,7 @@ This guide explains how to run the Tinode chat server using Docker and how to us
 ### Prerequisites
 
 1. [Docker](https://docs.docker.com/get-docker/) >= 1.8 because [Docker networking](https://docs.docker.com/network/) may not work with earlier versions
-2. Python >= 3.4 because this project uses [asyncio](https://docs.python.org/3/library/asyncio.html) for [cooperative multitasking](https://en.wikipedia.org/wiki/Cooperative_multitasking), as should you
+2. Python >= 3.6 because this project uses [asyncio](https://docs.python.org/3/library/asyncio.html) for [cooperative multitasking](https://en.wikipedia.org/wiki/Cooperative_multitasking), as should you
 
 Create a [Docker bridge network](https://docs.docker.com/network/bridge/) for the backing store and the chat server:
 ```bash
@@ -30,8 +32,14 @@ docker network create chat
 
 We'll use [MySQL](https://www.mysql.com/why-mysql/) for this example. Run the official MySQL container:
 
-```bash
-docker run --name mysql --network tinode-net --restart always --env MYSQL_ALLOW_EMPTY_PASSWORD=yes -d mysql:5.7
+```sh
+docker run
+    --name mysql
+    --network chat
+    --restart always
+    --env MYSQL_ALLOW_EMPTY_PASSWORD=yes
+    -d
+    mysql:5.7
 ```
 
 Version >= 5.7 is required. See MySQL Docker instructions for more options. See [deployment notes](#Deployment) for more on running this in production or deploying to a Docker Swarm cluster.
@@ -40,10 +48,15 @@ RethinkDB and MongoDB are also supported by the Tinode chat server, and there is
 
 ### Running the Tinode chat server
 
-Run the Tinode container that corresponds to our choice of MySQL for the backing store:
+Run the Tinode container that corresponds to our choice of MySQL for the backing store, exposing port 16060 for the gRPC channel.
 
 ```bash
-docker run -p 6060:6060 -d --name tinode-server --network chat tinode/tinode-mysql:latest
+docker run
+    --name tinode-server
+    --network chat
+    -p 16060:16060
+    -d
+    tinode/tinode-mysql:latest
 ```
 
 See [Tinode documentation](https://github.com/tinode/chat/tree/master/docker) for more on deploying the Tinode chat server using Docker.
@@ -52,24 +65,21 @@ See [Tinode documentation](https://github.com/tinode/chat/tree/master/docker) fo
 
 Install Python Chat API into your environment using pip:
 
-```bash
+```
 pip install chatapi
 ```
 
-If you are using Python >= 3.6 then open IPython >= 7.0 because it [supports running asynchronous code from the REPL](https://ipython.readthedocs.io/en/stable/interactive/autoawait.html):
+The following example registers a new user, creates a new group topic and sends a `"Hello, world!"` message.
 
-```ipython
-In [1]: import chat
-
-In [2]: session = chat.connect('tinode-server', 16060)
-
-In [3]: await session.register('arseniy:mypassword')
-Out[3]: 'X6hi1OA2QX71AN5eFAABAAEAgBjSnm1LU/EtSwFyE5Zx1t0b/o9K9nPt5jL3ao/3F8A='
-
-In [4]: topic_name = await session.new_topic()
-
-In [5]: await session.publish_str(topic_name, 'Hello, world!')
+```python
+import chat
+session = chat.quick_connect('tinode-server', 16060)
+token = await session.register('arseniy:mypassword')
+topic_name = await session.new_topic()
+await session.publish_str(topic_name, 'Hello, world!')
 ```
+
+For more examples, see the [documentation]().
 
 ## Running the tests
 
@@ -137,7 +147,7 @@ See also the list of [contributors](https://github.com/your/project/contributors
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE) file for details
 
 ## Acknowledgments
 

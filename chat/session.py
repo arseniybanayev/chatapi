@@ -57,6 +57,7 @@ class ChatSession(object):
         """
 
         # Parameters for connection and the internal chat event loop
+        print('inside init of new session')
         self.__host = host
         self.__port = port
         self.__chat_event_loop = chat_event_loop
@@ -674,8 +675,11 @@ class ChatSession(object):
         """
 
         # Connect to the server
+        print('connecting')
         self.__channel = grpclib.client.Channel(self.__host, self.__port)
+        print('created channel')
         async with pbx.NodeStub(self.__channel).MessageLoop.open() as stream:
+            print('opened stream')
             # Say hello to the server
             await stream.send_message(pb.ClientMsg(
                 hi=pb.ClientHi(
@@ -685,7 +689,9 @@ class ChatSession(object):
                     device_id=self.__device_id,
                     lang=self.__lang,
                     platform=self.__platform)))
+            print('said hi')
             hi_resp = await stream.recv_message()  # TODO timeout
+            print('got response')
             
             # Tell producers that we are ready for business
             self.__stream = stream

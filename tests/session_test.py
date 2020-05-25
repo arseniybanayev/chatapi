@@ -5,13 +5,21 @@ import json
 
 from concurrent import futures
 
-from common.testing import same_elements_in_lists
 from ..chat.loop import ChatLoop
 from ..chat.session import ChatSession, Rejected
 
+def same_elements_in_lists(list1, list2):
+    list1 = list(list1)
+    try:
+        for r in list2:
+            list1.remove(r)
+    except ValueError:
+        return False
+    return not list1
+
 @pytest.fixture(scope='module')
 def loop():
-    loop = ChatLoop('tinode-server', 16060)
+    loop = ChatLoop(os.environ['TINODE_HOST'], os.environ['TINODE_PORT'])
     yield loop
     loop.stop()
 
@@ -21,7 +29,9 @@ def random_secret():
 @pytest.mark.asyncio
 async def test_message_loop(loop: ChatLoop):
     async with loop.new_session() as s:
+        print('inside async with')
         s._ChatSession__ensure_message_loop_started()
+        print('ensured mesage loop started')
         assert isinstance(s._ChatSession__message_loop_future, futures.Future) 
         assert not s._ChatSession__message_loop_future.done()
         assert s._ChatSession__stream is not None

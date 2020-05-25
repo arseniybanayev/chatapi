@@ -41,11 +41,17 @@ class ChatLoop(object):
         """
 
         # On the first time, start the background thread and event loop
+        print('getting lock')
         with self.__new_session_lock:
+            print('in lock')
             if self.__loop is None:
+                print('loop is none')
                 self.__loop = asyncio.new_event_loop()
+                print('created new loop')
                 self.__thread = threading.Thread(target=self.__run_event_loop)
+                print('created new thread')
                 self.__thread.start()
+                print('started new thread')
 
         # Return a new session
         s = session.ChatSession(

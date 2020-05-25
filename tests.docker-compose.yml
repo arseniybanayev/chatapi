@@ -1,0 +1,23 @@
+version: "3.7"
+
+services:
+  pytest:
+    image: chatapi-tests-${GITHUB_RUN_ID}
+    environment:
+      - "TINODE_HOST=tinode-server"
+      - "TINODE_PORT=16060"
+      - "WAIT_FOR=tinode-server:16060"
+
+  tinode-server:
+    image: tinode/tinode-mysql:0.16.5
+    environment:
+      - "WAIT_FOR=mysql:3306"
+
+  mysql:
+    image: mysql:8.0.19
+    command:
+      - "mysqld"
+      - "--bind-address=0.0.0.0"
+    environment:
+      - "MYSQL_ALLOW_EMPTY_PASSWORD=yes"
+      - "MYSQL_ROOT_HOST=%"

@@ -14,7 +14,7 @@ The recommended chat server is the awesome open-source [Tinode chat server](http
 > 
 > The goal of this project is to deliver on XMPP's original vision: create a modern open platform for federated instant messaging with an emphasis on mobile communication. A secondary goal is to create a decentralized IM platform that is much harder to track and block by the governments.
 
-## Getting Started
+## <a name="GettingStarted"></a>Getting Started
 
 This guide explains how to run the Tinode chat server using Docker and how to use the Python Chat API to connect to it. The guide assumes a Linux environment.
 
@@ -25,7 +25,7 @@ This guide explains how to run the Tinode chat server using Docker and how to us
 
 Create a [Docker bridge network](https://docs.docker.com/network/bridge/) for the backing store and the chat server:
 ```bash
-docker network create chat
+$ docker network create chat
 ```
 
 ### Installing the backing store for Tinode
@@ -33,12 +33,12 @@ docker network create chat
 We'll use [MySQL](https://www.mysql.com/why-mysql/) for this example. Run the official MySQL container:
 
 ```sh
-docker run
-    --name mysql
-    --network chat
-    --restart always
-    --env MYSQL_ALLOW_EMPTY_PASSWORD=yes
-    -d
+$ docker run \
+    --name mysql \
+    --network chat \
+    --restart always \
+    --env MYSQL_ALLOW_EMPTY_PASSWORD=yes \
+    -d \
     mysql:5.7
 ```
 
@@ -51,11 +51,11 @@ RethinkDB and MongoDB are also supported by the Tinode chat server, and there is
 Run the Tinode container that corresponds to our choice of MySQL for the backing store, exposing port 16060 for the gRPC channel.
 
 ```bash
-docker run
-    --name tinode-server
-    --network chat
-    -p 16060:16060
-    -d
+$ docker run \
+    --name tinode-server \
+    --network chat \
+    -p 16060:16060 \
+    -d \
     tinode/tinode-mysql:latest
 ```
 
@@ -66,7 +66,7 @@ See [Tinode documentation](https://github.com/tinode/chat/tree/master/docker) fo
 Install Python Chat API into your environment using pip:
 
 ```
-pip install chatapi
+$ pip install chatapi
 ```
 
 The following example registers a new user, creates a new group topic and sends a `"Hello, world!"` message.
@@ -81,26 +81,6 @@ await session.publish_str(topic_name, 'Hello, world!')
 
 For more examples, see the [documentation]().
 
-## Running the tests
-
-Explain how to run the automated tests for this system
-
-### Break down into end to end tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-### And coding style tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
 ## <a name="Deployment"></a>Deployment
 
 For serious projects, you might reconsider running the backing store in a container: managed database providers remove the hassle of upgrading, patching, backups and other maintenance, and you can concern yourself less with availability and more with application features.
@@ -110,13 +90,21 @@ For serious projects, you might reconsider running the backing store in a contai
 Bridge networks are not supported on a Swarm cluster, so you would need to create a [Docker overlay network](https://docs.docker.com/network/overlay/) instead:
 
 ```bash
-docker network create --driver overlay chat
+$ docker network create --driver overlay chat
 ```
 
 If you choose to run MySQL in a container on the Swarm cluster, then you may want to modify the instructions in this guide to run the MySQL container like this:
 
 ```bash
-docker run --name mysql --network tinode-net --restart always --env MYSQL_ALLOW_EMPTY_PASSWORD=yes --env MYSQL_ROOT_HOST=% -d mysql:5.7 mysqld --bind-address=0.0.0.0
+$ docker run \
+    --name mysql \
+    --network tinode-net \
+    --restart always \
+    --env MYSQL_ALLOW_EMPTY_PASSWORD=yes \
+    --env MYSQL_ROOT_HOST=% \
+    -d \
+    mysql:5.7 \
+    mysqld --bind-address=0.0.0.0
 ```
 
 The `MYSQL_ROOT_HOST=%` environment variable allows the `root` user to log in from anywhere (like another container's virtual IP address in the Swarm cluster). The `mysqld --bind-address=0.0.0.0` command starts the MySQL server daemon and tells it to listen on all IP addresses on the local host (and all virtual IP addresses of the container).
@@ -125,25 +113,65 @@ The `MYSQL_ROOT_HOST=%` environment variable allows the `root` user to log in fr
 
 See [Tinode documentation](https://github.com/tinode/chat/blob/master/INSTALL.md#running-a-cluster) for more on scaling. This would need to be adapted for Docker Swarm.
 
-## Built With
+## Testing
 
-* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
-* [Maven](https://maven.apache.org/) - Dependency Management
-* [ROME](https://rometools.github.io/rome/) - Used to generate RSS Feeds
+Tests are run via [docker-compose](https://docs.docker.com/compose/). The [build-and-test](.github/workflows/build-and-test) workflow runs automatically on GitHub and does everything mentioned below.
 
-## Contributing
+### Building the testing image
 
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
+First, set the environment variable `GITHUB_RUN_ID` to something on your local machine. (This is automatically set to a unique run ID in the GitHub workflow.)
+
+```bash
+$ export GITHUB_RUN_ID=my_test_run
+```
+
+Then, build the testing image with the expected tag. (The PYTHONVERSION build arg defaults to `3.8`, but it is set to all of `[3.6, 3.7, 3.8]` in the GitHub workflow.)
+
+```bash
+$ docker build \
+    -t chatapi-tests-$GITHUB_RUN_ID \
+    --build-arg PYTHONVERSION=3.7 \
+    -f tests.Dockerfile \
+    .
+```
+
+### Running the tests
+
+The `tests.docker-compose.yml` file starts a MySQL container, a Tinode chat server container and a Python Chat API testing container, which automatically runs `pytest` when the backing store and chat server are ready. The GitHub workflow does this after building the testing image:
+
+```bash
+$ docker-compose \
+    -f tests.docker-compose.yml \
+    up \
+    --abort-on-container-exit \
+    --exit-code-from pytest
+```
+
+If you have the ports exposed properly after following the [Getting started](#GettingStarted) guide above, then you can do:
+
+```bash
+$ pip install pytest-asyncio
+$ pytest
+```
+
+### Linting
+
+The testing image contains `flake8` which is used by the GitHub workflow. You can lint with:
+
+```
+$ docker run chatapi-tests-$GITHUB_RUN_ID flake8 .
+```
+
+You can also lint in your own environment with:
+
+```bash
+$ pip install flake8
+$ flake8 .
+```
 
 ## Versioning
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
-
-## Authors
-
-* **Billie Thompson** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
-
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
+This project uses [semantic versioning](http://semver.org/) for versioning.
 
 ## License
 
@@ -151,6 +179,4 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE) f
 
 ## Acknowledgments
 
-* Hat tip to anyone whose code was used
-* Inspiration
-* etc
+* [or-else (Gene)](https://github.com/or-else) for Tinode chat server

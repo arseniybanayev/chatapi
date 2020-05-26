@@ -4,8 +4,8 @@ services:
   pytest:
     image: chatapi-tests-${GITHUB_RUN_ID}
     environment:
-      - "TINODE_HOST=tinode-server"
-      - "TINODE_PORT=16060"
+      - "CHAT_HOST=tinode-server"
+      - "CHAT_PORT=16060"
       - "WAIT_FOR=tinode-server:16060"
 
   tinode-server:

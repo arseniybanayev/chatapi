@@ -19,7 +19,7 @@ def same_elements_in_lists(list1, list2):
 
 @pytest.fixture(scope='module')
 def loop():
-    loop = ChatLoop(os.environ['TINODE_HOST'], os.environ['TINODE_PORT'])
+    loop = ChatLoop(os.environ['CHAT_HOST'], os.environ['CHAT_PORT'])
     yield loop
     loop.stop()
 

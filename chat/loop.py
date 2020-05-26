@@ -16,14 +16,14 @@ class ChatLoop(object):
     
     # Flask integration -- see app/__init__.py
     def init_app(self, app):
-        self.init(app.config['TINODE_HOST'], app.config['TINODE_PORT'])
+        self.init(app.config['CHAT_HOST'], app.config['CHAT_PORT'])
     
     def init(self, host, port):
         self.__host = host
         self.__port = port
     
     def init_from_env(self):
-        self.init(os.environ['TINODE_HOST'], os.environ['TINODE_PORT'])
+        self.init(os.environ['CHAT_HOST'], os.environ['CHAT_PORT'])
     
     def __run_event_loop(self):
         """ Runs in a background thread """

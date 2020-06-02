@@ -65,6 +65,14 @@ class TopicDescription(object):
         return self.__desc.seq_id
     
     @property
+    def last_message_timestamp(self) -> Optional[dt.datetime]:
+        """ Timestamp of the last message """
+        if self.__desc.touched_at is not None:
+            # utcfromtimestamp takes seconds, not milliseconds
+            return dt.datetime.utcfromtimestamp(self.__desc.touched_at / 1000.0)
+        return None
+    
+    @property
     def read_message_id(self) -> int:
         """ ID of the last message the user claims to have read """
         return self.__desc.read_id

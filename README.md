@@ -115,9 +115,18 @@ See [Tinode documentation](https://github.com/tinode/chat/blob/master/INSTALL.md
 
 ## Testing
 
-Tests are run via [docker-compose](https://docs.docker.com/compose/). The [build-and-test](.github/workflows/build-and-test) workflow runs automatically on GitHub and does everything mentioned below.
+If you have the ports exposed properly after following the [Getting started](#GettingStarted) guide above, then you can do:
 
-### Building the testing image
+```bash
+$ pip install pytest-asyncio
+$ export CHAT_HOST=tinode-server
+$ export CHAT_HOST=16060
+$ pytest
+```
+
+### Testing with docker-compose
+
+Tests are easily run via [docker-compose](https://docs.docker.com/compose/). The [build-and-test](.github/workflows/build-and-test.yml) workflow runs automatically on GitHub and does everything mentioned below.
 
 First, set the environment variable `GITHUB_RUN_ID` to something on your local machine. (This is automatically set to a unique run ID in the GitHub workflow.)
 
@@ -135,8 +144,6 @@ $ docker build \
     .
 ```
 
-### Running the tests
-
 The `tests.docker-compose.yml` file starts a MySQL container, a Tinode chat server container and a Python Chat API testing container, which automatically runs `pytest` when the backing store and chat server are ready. The GitHub workflow does this after building the testing image:
 
 ```bash
@@ -145,13 +152,6 @@ $ docker-compose \
     up \
     --abort-on-container-exit \
     --exit-code-from pytest
-```
-
-If you have the ports exposed properly after following the [Getting started](#GettingStarted) guide above, then you can do:
-
-```bash
-$ pip install pytest-asyncio
-$ pytest
 ```
 
 ### Linting
@@ -175,7 +175,7 @@ This project uses [semantic versioning](http://semver.org/) for versioning.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE) file for details
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
 
 ## Acknowledgments
 

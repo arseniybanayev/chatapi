@@ -1,3 +1,4 @@
+import datetime as dt
 import pytest
 import asyncio
 import os
@@ -213,6 +214,56 @@ async def test_group_topic_public(loop):
         assert len(topics) == 2
         assert topics[name1] == 'first_topic'
         assert topics[name2] == 'second_topic'
+
+@pytest.mark.asyncio
+async def test_p2p_topic_last_message_timestamp(loop):
+    async with loop.new_session() as s:
+        await s.register(random_secret())
+        topic_name = s.user_id
+
+    async with loop.new_session() as s:
+        await s.register(random_secret())
+        await s.subscribe(topic_name)
+
+        [sub] = await s.get_subscribed_topics()
+        t = sub.last_message_timestamp
+        
+        now = dt.datetime.now()
+        await s.publish_str(topic_name, 'hello')
+        [sub] = await s.get_subscribed_topics()
+        assert t < sub.last_message_timestamp
+        assert now < sub.last_message_timestamp
+        t = sub.last_message_timestamp
+
+        now = dt.datetime.now()
+        await s.publish_str(topic_name, 'world')
+        [sub] = await s.get_subscribed_topics()
+        assert t < sub.last_message_timestamp
+        assert now < sub.last_message_timestamp
+        t = sub.last_message_timestamp
+
+@pytest.mark.asyncio
+async def test_group_topic_last_message_timestamp(loop):
+    async with loop.new_session() as s:
+        await s.register(random_secret())
+        topic_name = await s.new_topic()
+
+        [sub] = await s.get_subscribed_topics()
+        t = sub.last_message_timestamp
+        
+        now = dt.datetime.now()
+        await s.publish_str(topic_name, 'hello')
+        [sub] = await s.get_subscribed_topics()
+        assert t < sub.last_message_timestamp
+        assert now < sub.last_message_timestamp
+        t = sub.last_message_timestamp
+
+        now = dt.datetime.now()
+        await s.publish_str(topic_name, 'world')
+        [sub] = await s.get_subscribed_topics()
+        assert t < sub.last_message_timestamp
+        assert now < sub.last_message_timestamp
+        t = sub.last_message_timestamp
 
 @pytest.mark.asyncio
 async def test_find_users_by_tags(loop):

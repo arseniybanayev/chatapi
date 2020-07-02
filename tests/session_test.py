@@ -30,9 +30,7 @@ def random_secret():
 @pytest.mark.asyncio
 async def test_message_loop(loop: ChatLoop):
     async with loop.new_session() as s:
-        print('inside async with')
         s._ChatSession__ensure_message_loop_started()
-        print('ensured mesage loop started')
         assert isinstance(s._ChatSession__message_loop_future, futures.Future) 
         assert not s._ChatSession__message_loop_future.done()
         assert s._ChatSession__stream is not None

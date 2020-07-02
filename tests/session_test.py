@@ -333,6 +333,22 @@ async def test_find_topics_and_users_with_same_tags(loop):
         assert found_topic.topic == topic
 
 @pytest.mark.asyncio
+async def test_delete_topic(loop):
+    b_secret = random_secret()
+    async with loop.new_session() as a, loop.new_session() as b:
+        await a.register(random_secret())
+        await b.register(b_secret)
+        
+        topic = await a.new_topic()
+        await b.subscribe(topic)
+        assert len(await b.get_subscribed_topics()) == 1
+        await a.delete_topic(topic)
+        assert len(await b.get_subscribed_topics()) == 0
+        
+        with pytest.raises(Rejected):
+            await b.subscribe(topic)
+
+@pytest.mark.asyncio
 async def test_subscribe_and_attach(loop):
     async with loop.new_session() as a:
         await a.register(random_secret())

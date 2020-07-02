@@ -563,6 +563,20 @@ class ChatSession(object):
                 del_seq=[pb.SeqRange(low=low, hi=hi) for low, hi in messages],
                 hard=hard)
         }))
+    
+    async def delete_topic(self, topic: str):
+        """
+        Delete a topic, including all subscriptions and all messages. Only
+        the owner can delete a topic. Peer-to-peer topics cannot be deleted.
+
+        """
+        await self.__send_message(pb.ClientMsg(**{
+            # 'del' is a reserved keyword in python, so we use dict expansion
+            'del': pb.ClientDel(
+                topic=topic,
+                what=pb.ClientDel.TOPIC,
+                hard=True)
+        }))
 
     async def notify_key_press(self, topic: str):
         """

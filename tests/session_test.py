@@ -349,6 +349,62 @@ async def test_delete_topic(loop):
             await b.subscribe(topic)
 
 @pytest.mark.asyncio
+async def test_permissions_owner_cannot_leave(loop):
+    async with loop.new_session() as a, loop.new_session() as b:
+        await a.register(random_secret())
+        await b.register(random_secret())
+
+        topic = await a.new_topic()
+        await b.subscribe(topic)
+
+        with pytest.raises(Rejected):  # The only owner can't leave the topic
+            await a.leave(topic, unsubscribe=True)
+
+@pytest.mark.asyncio
+async def test_permissions_owner_cannot_leave_before_new_owner_accepts(loop):
+    async with loop.new_session() as a, loop.new_session() as b:
+        await a.register(random_secret())
+        await b.register(random_secret())
+
+        topic = await a.new_topic()
+        await b.subscribe(topic)
+
+        # Transfer ownership, and try leaving before B accepts
+        await a.set_permissions(topic, b.user_id, "JRWPASDO")
+        with pytest.raises(Rejected):
+            await a.leave(topic, unsubscribe=True)
+
+@pytest.mark.asyncio
+async def test_permissions_non_owner_cannot_take_ownership(loop):
+    async with loop.new_session() as a, loop.new_session() as b:
+        await a.register(random_secret())
+        await b.register(random_secret())
+
+        topic = await a.new_topic()
+        await b.subscribe(topic)
+
+        # A, the current owner, has not given ownership to B yet
+        with pytest.raises(Rejected):
+            await b.set_permissions(topic, None, "JRWPASDO")
+
+@pytest.mark.asyncio
+async def test_permissions_owner_can_leave_after_new_owner_accepts(loop):
+    async with loop.new_session() as a, loop.new_session() as b:
+        await a.register(random_secret())
+        await b.register(random_secret())
+
+        topic = await a.new_topic()
+        await b.subscribe(topic)
+
+        # Transfer ownership
+        await a.set_permissions(topic, b.user_id, "JRWPASDO")
+
+        # Accept the transfer of ownership
+        await b.set_permissions(topic, None, "JRWPASDO")
+        await a.leave(topic, unsubscribe=True)
+        assert len(await a.get_subscribed_topics()) == 0
+
+@pytest.mark.asyncio
 async def test_subscribe_and_attach(loop):
     async with loop.new_session() as a:
         await a.register(random_secret())

@@ -521,6 +521,32 @@ class ChatSession(object):
                         private=private)))))
         # TODO return a TopicDescription? is this ctrl or meta?
 
+    async def set_permissions(
+        self,
+        topic: str,
+        user_id: str,
+        permissions: str):
+
+        """
+        Update a user's permissions in the named `topic`. Use this method
+        to invite users to subscribe, to change ownership, to accept
+        ownership changes, etc.
+
+        If `user_id` is `None`, then this operation will apply to the
+        current user.
+
+        See Tinode documentation for more on the `permissions` string:
+        https://github.com/tinode/chat/blob/master/docs/API.md#access-control
+        """
+
+        await self.__send_message(pb.ClientMsg(
+            set = pb.ClientSet(
+                topic=topic,
+                query=pb.SetQuery(
+                    sub=pb.SetSub(
+                        user_id=user_id,
+                        mode=permissions)))))
+
     async def delete_messages(self, topic: str, messages: Union[int, Tuple[int, int], List[Union[int, Tuple[int, int]]]], hard: bool = False):
         """
         Delete messages from the named `topic`.

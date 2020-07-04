@@ -375,6 +375,16 @@ class ChatSession(object):
                     desc=pb.GetOpts(
                         if_modified_since=if_modified_since)))))
         return TopicDescription(topic, meta.desc)
+
+    async def get_profile(self, if_modified_since: Optional[Union[dt.datetime, int]] = None) -> TopicDescription:
+        """
+        Get a `TopicDescription` representing the current user.
+        If `if_modified_since` is given, then public and private fields
+        will be returned only if at least one of them has been updated
+        after that timestamp.
+        """
+
+        return await self.get_topic_description('me', if_modified_since)
     
     async def get_subscribed_topics(
         self,
@@ -520,6 +530,30 @@ class ChatSession(object):
                         public=public,
                         private=private)))))
         # TODO return a TopicDescription? is this ctrl or meta?
+
+    async def set_profile(
+        self,
+        tags: Optional[List[str]] = None,
+        public: Optional[bytes] = None,
+        private: Optional[bytes] = None) -> str:
+
+        """
+        Update the current user's metadata with the specified information.
+
+        `tags`: Arbitrary case-insensitive strings used for discovering
+        users with `find_users()`. Tags may have a prefix which serves as
+        a namespace, like `tel:14155551212`. Tags may not contain the
+        double quote `"` but may contain spaces.
+
+        `public`: Application-defined content to describe the user,
+        visible to all users.
+
+        `private`: Private application-defined content to describe the
+        user, visible only to the user.
+        """
+        
+        await self.subscribe('me')
+        await self.set_topic_description('me', tags=tags, public=public, private=private)
 
     async def set_permissions(
         self,

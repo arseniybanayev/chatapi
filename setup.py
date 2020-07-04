@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="chatapi",
-    version="0.1.5",
+    version="0.1.6",
     author="Arseniy Banayev",
     author_email="arseniy.banayev@gmail.com",
     description="Python Chat API for Python applications that need instant messaging",

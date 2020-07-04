@@ -9,6 +9,9 @@ from concurrent import futures
 from ..chat.loop import ChatLoop
 from ..chat.session import ChatSession, Rejected
 
+os.environ['CHAT_HOST'] = 'tinode-server'
+os.environ['CHAT_PORT'] = '16060'
+
 def same_elements_in_lists(list1, list2):
     list1 = list(list1)
     try:
@@ -98,9 +101,12 @@ def simple_decode(b):
 
 @pytest.mark.asyncio
 async def test_p2p_topic_publish(loop):
+    secret_s1 = random_secret()
     async with loop.new_session() as s1, loop.new_session() as s2:
-        await s1.register(random_secret())
+        await s1.register(secret_s1)
         await s2.register(random_secret())
+
+        user_ids = [s1.user_id, s2.user_id]
 
         # s1 can send a message after subscribing
         with pytest.raises(Rejected):
@@ -146,6 +152,21 @@ async def test_p2p_topic_publish(loop):
         assert msg.id == echo.id
         assert msg.content == echo.content
         assert s2._ChatSession__data_messages.qsize() == 0
+
+        await s2.publish(s1.user_id, simple_encode('ok!'))
+    
+    async with loop.new_session() as s1:
+        await s1.login(secret_s1)
+        await s1.subscribe(user_ids[1])
+        await s1.get_message_history(user_ids[1])
+        messages_aiter = s1.messages()
+
+        from_user_ids = []
+        from_user_ids.append((await messages_aiter.__anext__()).from_user_id)
+        from_user_ids.append((await messages_aiter.__anext__()).from_user_id)
+        from_user_ids.append((await messages_aiter.__anext__()).from_user_id)
+
+        assert set(user_ids) == set(from_user_ids)
 
 @pytest.mark.asyncio
 async def test_group_subscribers_public(loop):
@@ -212,6 +233,17 @@ async def test_group_topic_public(loop):
         assert len(topics) == 2
         assert topics[name1] == 'first_topic'
         assert topics[name2] == 'second_topic'
+
+@pytest.mark.asyncio
+async def test_update_profile(loop):
+    async with loop.new_session() as s:
+        await s.register(random_secret(), public=simple_encode('hello'))
+        profile = await s.get_profile()
+        assert simple_decode(profile.public) == 'hello'
+
+        await s.set_profile(public=simple_encode('world'))
+        profile = await s.get_profile()
+        assert simple_decode(profile.public) == 'world'
 
 @pytest.mark.asyncio
 async def test_p2p_topic_last_message_timestamp(loop):

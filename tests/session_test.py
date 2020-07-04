@@ -236,14 +236,31 @@ async def test_group_topic_public(loop):
 
 @pytest.mark.asyncio
 async def test_update_profile(loop):
-    async with loop.new_session() as s:
+    async with loop.new_session() as s, loop.new_session() as q:
         await s.register(random_secret(), public=simple_encode('hello'))
+        await q.register(random_secret())
+
+        topic_name = await s.new_topic()
+        await q.subscribe(topic_name)
+
         profile = await s.get_profile()
         assert simple_decode(profile.public) == 'hello'
+        topic_desc = await q.get_topic_description(s.user_id)
+        assert simple_decode(topic_desc.public) == 'hello'
+        [subscriber] = [u for u in (await s.get_subscribed_users(topic_name)) if u.public]
+        assert simple_decode(subscriber.public) == 'hello'
+        [subscriber] = [u for u in (await q.get_subscribed_users(topic_name)) if u.public]
+        assert simple_decode(subscriber.public) == 'hello'
 
         await s.set_profile(public=simple_encode('world'))
         profile = await s.get_profile()
         assert simple_decode(profile.public) == 'world'
+        topic_desc = await q.get_topic_description(s.user_id)
+        assert simple_decode(topic_desc.public) == 'world'
+        [subscriber] = [u for u in (await s.get_subscribed_users(topic_name)) if u.public]
+        assert simple_decode(subscriber.public) == 'world'
+        [subscriber] = [u for u in (await q.get_subscribed_users(topic_name)) if u.public]
+        assert simple_decode(subscriber.public) == 'world'
 
 @pytest.mark.asyncio
 async def test_p2p_topic_last_message_timestamp(loop):
